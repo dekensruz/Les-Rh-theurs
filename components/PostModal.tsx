@@ -13,10 +13,18 @@ interface PostModalProps {
   currentUserName?: string;
 }
 
-export const PostModal: React.FC<PostModalProps> = ({ post, onClose, onEdit, onDelete, currentUserId, currentUserName }) => {
+export const PostModal: React.FC<PostModalProps> = ({ 
+  post, 
+  onClose, 
+  onEdit, 
+  onDelete, 
+  currentUserId, 
+  currentUserName 
+}) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [selectedQuote, setSelectedQuote] = useState('');
   const [quoteToInsert, setQuoteToInsert] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   if (!post) return null;
 
@@ -37,6 +45,27 @@ export const PostModal: React.FC<PostModalProps> = ({ post, onClose, onEdit, onD
     const modalEl = document.querySelector('.modal-scroll-container');
     if (modalEl) {
       modalEl.scrollTo({ top: modalEl.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
+  const handleShareLink = async () => {
+    const shareUrl = `${window.location.origin}/?post=${post.id}`;
+    const shareData = {
+      title: `Les Rhéteurs - ${post.title}`,
+      text: `Découvrez cet exposé sur "${post.book_title}" par ${post.user_name}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      }
+    } catch (err) {
+      console.error("Erreur partage:", err);
     }
   };
 
@@ -76,7 +105,6 @@ export const PostModal: React.FC<PostModalProps> = ({ post, onClose, onEdit, onD
             <p className="text-stone-800 leading-[1.7] whitespace-pre-wrap font-light">{post.content}</p>
           </article>
 
-          {/* Citation bar flottante optimisée responsive */}
           {selectedQuote && (
             <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[60] p-2 md:p-3 bg-stone-900/95 backdrop-blur text-white rounded-2xl shadow-2xl flex items-center gap-3 md:gap-4 animate-in slide-in-from-bottom-5 duration-300 w-[92vw] md:w-auto md:max-w-xl border border-white/10">
               <p className="text-[10px] md:text-xs italic text-stone-300 truncate flex-1 pl-2">"{selectedQuote}"</p>
@@ -100,8 +128,15 @@ export const PostModal: React.FC<PostModalProps> = ({ post, onClose, onEdit, onD
             onQuoteUsed={() => setQuoteToInsert('')}
           />
 
-          <div className="flex justify-center mt-12 mb-4 border-t border-stone-100 pt-8">
-            <Button onClick={onClose} variant="outline" className="w-full md:w-auto px-10 rounded-2xl">Refermer l'ouvrage</Button>
+          <div className="flex flex-col items-center gap-4 mt-12 mb-4 border-t border-stone-100 pt-8">
+            <p className="text-xs text-stone-400 font-serif italic text-center">Partager cette découverte avec le monde</p>
+            <div className="flex flex-col md:flex-row gap-3 w-full justify-center">
+              <Button onClick={handleShareLink} className="px-10 rounded-2xl shadow-lg border-2 border-amber-500 bg-amber-500 text-stone-900 hover:bg-amber-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                {copySuccess ? "Lien copié !" : "Partager le lien de l'exposé"}
+              </Button>
+              <Button onClick={onClose} variant="outline" className="px-10 rounded-2xl">Refermer l'ouvrage</Button>
+            </div>
           </div>
         </div>
       </div>

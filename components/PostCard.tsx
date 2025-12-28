@@ -6,9 +6,10 @@ interface PostCardProps {
   post: Post & { profiles?: any };
   onClick: (post: Post) => void;
   onUserClick?: (userId: string) => void;
+  hideAuthor?: boolean;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onClick, onUserClick }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onClick, onUserClick, hideAuthor = false }) => {
   const date = new Date(post.created_at).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -21,8 +22,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, onUserClick }
   };
 
   const hasAccount = !!post.user_id;
-
-  // Sécurité pour l'avatar : PostgREST peut renvoyer un objet ou un tableau d'un seul élément
   const profileData = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
   const avatarUrl = profileData?.avatar_url;
 
@@ -62,29 +61,37 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, onUserClick }
           {post.content}
         </p>
 
-        <div className="mt-auto flex items-center justify-between pt-5 border-t border-stone-50">
-          <div 
-            className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${hasAccount ? 'hover:bg-stone-50 cursor-pointer' : ''}`}
-            onClick={hasAccount ? handleUserClick : undefined}
-          >
-            <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center overflow-hidden shadow-sm shrink-0 border border-stone-200">
-              {avatarUrl ? (
-                <img src={avatarUrl} className="w-full h-full object-cover" alt="User" />
-              ) : (
-                <div className="w-full h-full bg-stone-900 flex items-center justify-center text-white text-[10px] font-bold">
-                  {post.user_name.charAt(0).toUpperCase()}
-                </div>
-              )}
+        {!hideAuthor ? (
+          <div className="mt-auto flex items-center justify-between pt-5 border-t border-stone-50">
+            <div 
+              className={`flex items-center gap-2 p-1 rounded-lg transition-colors ${hasAccount ? 'hover:bg-stone-50 cursor-pointer' : ''}`}
+              onClick={hasAccount ? handleUserClick : undefined}
+            >
+              <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center overflow-hidden shadow-sm shrink-0 border border-stone-200">
+                {avatarUrl ? (
+                  <img src={avatarUrl} className="w-full h-full object-cover" alt="User" />
+                ) : (
+                  <div className="w-full h-full bg-stone-900 flex items-center justify-center text-white text-[10px] font-bold">
+                    {post.user_name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-stone-800 group-hover:text-amber-700 transition-colors">{post.user_name}</span>
+                {hasAccount && <span className="text-[8px] text-stone-400 uppercase tracking-tighter">Voir le profil</span>}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-stone-800 group-hover:text-amber-700 transition-colors">{post.user_name}</span>
-              {hasAccount && <span className="text-[8px] text-stone-400 uppercase tracking-tighter">Voir le profil</span>}
-            </div>
+            <span className="text-[9px] text-stone-400 font-medium tracking-tighter italic">
+              {date}
+            </span>
           </div>
-          <span className="text-[9px] text-stone-400 font-medium tracking-tighter italic">
-            {date}
-          </span>
-        </div>
+        ) : (
+          <div className="mt-auto pt-5 border-t border-stone-50 text-right">
+            <span className="text-[9px] text-stone-400 font-medium tracking-tighter italic">
+              Publié le {date}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

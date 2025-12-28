@@ -91,23 +91,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ userId, onClose }) =
     }
   }
 
-  const handleDownload = async () => {
-    if (!profile?.avatar_url) return;
-    try {
-      const response = await fetch(profile.avatar_url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `rhéteur-portrait-${profile.full_name}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      alert("Erreur lors du téléchargement");
-    }
-  };
-
   if (loading) return null;
 
   return (
@@ -174,13 +157,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ userId, onClose }) =
           </button>
           <div className="relative group max-w-2xl w-full text-center">
             <img src={profile.avatar_url} className="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/10" alt="Full portrait" />
-            <button 
-              onClick={handleDownload}
-              className="mt-8 mx-auto flex items-center gap-3 bg-white text-stone-900 px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-xl"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              Télécharger le portrait
-            </button>
           </div>
         </div>
       )}

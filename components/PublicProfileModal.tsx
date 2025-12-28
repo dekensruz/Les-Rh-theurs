@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { Profile, Post } from '../types';
 import { PostCard } from './PostCard';
@@ -15,6 +15,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({ userId, 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchPublicData();
@@ -35,22 +36,15 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({ userId, 
     }
   };
 
-  const handleDownload = async () => {
-    if (!profile?.avatar_url) return;
-    try {
-      const response = await fetch(profile.avatar_url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `portrait-${profile.full_name}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      alert("Erreur lors du téléchargement");
-    }
-  };
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery) return posts;
+    const q = searchQuery.toLowerCase();
+    return posts.filter(p => 
+      p.title.toLowerCase().includes(q) || 
+      p.book_title.toLowerCase().includes(q) || 
+      p.category.toLowerCase().includes(q)
+    );
+  }, [posts, searchQuery]);
 
   if (loading) return null;
 
@@ -63,9 +57,9 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({ userId, 
           </button>
 
           <div className="p-8 md:p-16">
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-16 border-b border-stone-100 pb-12">
+            <div className="flex flex-col md:flex-row items-center gap-12 mb-16 border-b border-stone-100 pb-12">
               <div 
-                className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-8 border-white shadow-2xl bg-stone-100 cursor-zoom-in hover:scale-105 transition-transform"
+                className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-[10px] border-white shadow-2xl bg-stone-100 cursor-zoom-in hover:scale-105 transition-transform shrink-0"
                 onClick={() => profile?.avatar_url && setShowFullImage(true)}
               >
                 {profile?.avatar_url ? (
@@ -76,26 +70,48 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({ userId, 
                   </div>
                 )}
               </div>
-              <div className="text-center md:text-left">
-                <h2 className="font-serif text-4xl md:text-6xl text-stone-900 mb-4">{profile?.full_name || 'Lecteur Rhéteur'}</h2>
-                <p className="text-stone-500 text-lg max-w-2xl italic leading-relaxed">
-                  {profile?.bio || "Ce rhéteur n'a pas encore partagé sa biographie, mais ses lectures parlent pour lui."}
-                </p>
-                <div className="mt-6 flex justify-center md:justify-start gap-4">
-                  <div className="bg-amber-100 px-4 py-2 rounded-full text-amber-900 text-xs font-bold uppercase tracking-widest">
-                    {posts.length} Publications
+              <div className="flex-1 text-center md:text-left">
+                <h2 className="font-serif text-4xl md:text-7xl text-stone-900 mb-6">{profile?.full_name || 'Lecteur Rhéteur'}</h2>
+                
+                <div className="relative inline-block max-w-2xl group">
+                   <div className="absolute -top-6 -left-6 text-amber-500/20 text-7xl font-serif select-none group-hover:text-amber-500/40 transition-colors">“</div>
+                   <div className="bg-white/40 backdrop-blur-sm p-6 md:p-8 rounded-[2rem] border-l-4 border-amber-500 shadow-sm relative z-10">
+                      <p className="text-stone-600 text-lg md:text-xl font-serif italic leading-relaxed">
+                        {profile?.bio || "Ce rhéteur n'a pas encore partagé sa biographie, mais ses lectures parlent pour lui."}
+                      </p>
+                   </div>
+                   <div className="absolute -bottom-10 -right-6 text-amber-500/20 text-7xl font-serif select-none rotate-180">“</div>
+                </div>
+
+                <div className="mt-12 flex justify-center md:justify-start gap-4">
+                  <div className="bg-stone-900 px-6 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                    {posts.length} Écrits au Salon
                   </div>
                 </div>
               </div>
             </div>
 
-            <h3 className="font-serif text-3xl text-stone-900 mb-8">Ses expositions au Salon</h3>
-            {posts.length === 0 ? (
-              <p className="text-stone-400 italic">Aucune publication pour le moment.</p>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+              <h3 className="font-serif text-3xl text-stone-900">Expositions de l'auteur</h3>
+              
+              <div className="relative w-full md:w-80 group">
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher dans ses écrits..."
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-2xl text-xs outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 transition-all"
+                />
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
+            </div>
+
+            {filteredPosts.length === 0 ? (
+              <p className="text-stone-400 italic text-center py-20 bg-stone-50/50 rounded-3xl border border-dashed border-stone-200">Aucune publication trouvée pour cette recherche.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {posts.map(post => (
-                  <PostCard key={post.id} post={post} onClick={onPostClick} />
+                {filteredPosts.map(post => (
+                  <PostCard key={post.id} post={post} onClick={onPostClick} hideAuthor={true} />
                 ))}
               </div>
             )}
@@ -110,13 +126,6 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({ userId, 
           </button>
           <div className="relative group max-w-2xl w-full text-center">
             <img src={profile.avatar_url} className="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/10" alt="Full profile" />
-            <button 
-              onClick={handleDownload}
-              className="mt-8 mx-auto flex items-center gap-3 bg-white text-stone-900 px-8 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-xl"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              Télécharger l'image
-            </button>
           </div>
         </div>
       )}

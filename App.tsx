@@ -62,6 +62,16 @@ const App: React.FC = () => {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
+  // Handle post ID in URL for sharing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('post');
+    if (postId && posts.length > 0) {
+      const found = posts.find(p => p.id === postId);
+      if (found) setSelectedPost(found);
+    }
+  }, [posts]);
+
   const startEdit = (post: Post) => {
     setEditingPost(post);
     setIsFormOpen(true);
@@ -184,7 +194,7 @@ const App: React.FC = () => {
           <div>
             {currentView === 'salon' && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">{displayPosts.map(post => <PostCard key={post.id} post={post} onClick={setSelectedPost} onUserClick={setViewedUserId} />)}</div>}
             {currentView === 'dashboard' && <Dashboard posts={displayPosts} onEdit={startEdit} onDelete={handleDeletePost} onView={setSelectedPost} />}
-            {currentView === 'circles' && <CirclesView currentUserId={session?.user?.id} onAuthRequired={() => setIsAuthOpen(true)} />}
+            {currentView === 'circles' && <CirclesView currentUserId={session?.user?.id} onAuthRequired={() => setIsAuthOpen(true)} onUserClick={setViewedUserId} />}
           </div>
         )}
       </section>

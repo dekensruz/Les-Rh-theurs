@@ -7,9 +7,10 @@ import { Button } from './Button';
 interface CirclesViewProps {
   currentUserId?: string;
   onAuthRequired?: () => void;
+  onUserClick?: (userId: string) => void;
 }
 
-export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthRequired }) => {
+export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthRequired, onUserClick }) => {
   const [circles, setCircles] = useState<any[]>([]);
   const [selectedCircle, setSelectedCircle] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,15 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
   
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isEditingReading, setIsEditingReading] = useState(false);
+  const [creatingCircle, setCreatingCircle] = useState(false);
   const [readingForm, setReadingForm] = useState({ id: '', book_title: '', book_author: '', end_date: '' });
+  
+  const [newCircleData, setNewCircleData] = useState({
+    name: '',
+    description: '',
+    theme: 'Fiction',
+    cover_url: ''
+  });
 
   useEffect(() => {
     fetchCircles();
@@ -42,7 +51,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
   const fetchCircleDetails = async (circle: any) => {
     setSelectedCircle(circle);
     try {
-      // Pour éviter [object Object], on extrait proprement le profil de la jointure
       const { data: membersData } = await supabase
         .from('circle_members')
         .select('profiles:user_id (*)')
@@ -54,7 +62,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
         .eq('circle_id', circle.id)
         .order('created_at', { ascending: false });
       
-      // Extraction sécurisée des profils
       const members = (membersData?.map((m: any) => {
         const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
         return p;
@@ -64,6 +71,36 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
       setCircleReadings(readings || []);
     } catch (err) {
       console.error("Erreur chargement cercle:", err);
+    }
+  };
+
+  const handleCreateCircle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUserId) return;
+    setCreatingCircle(true);
+    try {
+      const { data, error } = await supabase.from('circles').insert([{
+        ...newCircleData,
+        creator_id: currentUserId
+      }]).select().single();
+      
+      if (error) throw error;
+
+      // Auto-join creator
+      await supabase.from('circle_members').insert([{
+        circle_id: data.id,
+        user_id: currentUserId,
+        role: 'admin'
+      }]);
+
+      setShowCreateForm(false);
+      setNewCircleData({ name: '', description: '', theme: 'Fiction', cover_url: '' });
+      fetchCircles();
+      fetchUserMemberships();
+    } catch (err: any) {
+      alert("Erreur création cercle: " + err.message);
+    } finally {
+      setCreatingCircle(false);
     }
   };
 
@@ -139,7 +176,9 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
             <div key={circle.id} className="bg-white border border-stone-100 rounded-[2.5rem] overflow-hidden flex flex-col group shadow-sm hover:shadow-xl transition-all h-[450px] paper-texture">
               <div className="h-40 relative bg-stone-100">
                 {circle.cover_url ? <img src={circle.cover_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-900" />}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase">{circle.theme}</div>
+                <div className="absolute top-4 right-4 bg-stone-900 text-amber-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg border border-white/10">
+                  {circle.theme}
+                </div>
               </div>
               <div className="p-8 flex-grow">
                 <h3 className="font-serif text-2xl text-stone-900 mb-3">{circle.name}</h3>
@@ -158,13 +197,42 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
         })}
       </div>
 
+      {/* Modal Création Cercle */}
+      {showCreateForm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 relative paper-texture">
+            <button onClick={() => setShowCreateForm(false)} className="absolute top-6 right-6 text-stone-400 hover:text-stone-900"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <h2 className="font-serif text-3xl text-stone-900 mb-6">Fonder un Cercle</h2>
+            <form onSubmit={handleCreateCircle} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Nom du Cercle</label>
+                <input required value={newCircleData.name} onChange={e => setNewCircleData({...newCircleData, name: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none text-sm" placeholder="Ex: Le Salon des Existentialistes" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Thématique</label>
+                <select value={newCircleData.theme} onChange={e => setNewCircleData({...newCircleData, theme: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none text-sm appearance-none">
+                  {['Fiction', 'Philosophie', 'Histoire', 'Poésie', 'Classiques', 'Contemporain'].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">Vocation / Description</label>
+                <textarea required rows={3} value={newCircleData.description} onChange={e => setNewCircleData({...newCircleData, description: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none text-sm resize-none" placeholder="Quelle est l'intention de ce cercle ?" />
+              </div>
+              <Button type="submit" isLoading={creatingCircle} className="w-full py-4 mt-4">Inaugurer le Cercle</Button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {selectedCircle && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-0 md:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-[#fdfbf7] w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] overflow-y-auto rounded-none md:rounded-[3rem] shadow-2xl relative paper-texture p-8 md:p-16">
             <button onClick={() => setSelectedCircle(null)} className="absolute top-6 right-6 text-stone-400 hover:text-stone-900"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
             
             <h2 className="font-serif text-4xl text-stone-900 mb-2">{selectedCircle.name}</h2>
-            <p className="text-amber-700 font-bold uppercase tracking-widest text-xs mb-8">{selectedCircle.theme}</p>
+            <div className="bg-stone-900 text-amber-500 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] w-fit mb-8 shadow-sm">
+              {selectedCircle.theme}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="space-y-8">
@@ -210,7 +278,11 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
                 <h4 className="text-xs font-bold text-stone-400 uppercase tracking-[0.2em] mb-4">Membres ({circleMembers.length})</h4>
                 <div className="grid grid-cols-2 gap-4">
                   {circleMembers.map((member, idx) => (
-                    <div key={member?.id || idx} className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-stone-100 shadow-sm">
+                    <div 
+                      key={member?.id || idx} 
+                      className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-stone-100 shadow-sm hover:border-amber-500 cursor-pointer transition-colors"
+                      onClick={() => member?.id && onUserClick?.(member.id)}
+                    >
                       <div className="w-10 h-10 rounded-full bg-stone-100 overflow-hidden shrink-0 border-2 border-amber-50">
                         {member?.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-serif">{member?.full_name?.charAt(0) || '?'}</div>}
                       </div>
