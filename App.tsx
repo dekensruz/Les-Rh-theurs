@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabase';
 import { Post, Profile } from './types';
 import { PostCard } from './components/PostCard';
@@ -115,14 +116,21 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Filtrage combiné : Vue (Salon/Mien) + Catégorie + Recherche
   const displayPosts = useMemo(() => {
     let result = posts;
+
+    // 1. Vue
     if (currentView === 'dashboard' && session?.user?.id) {
       result = result.filter(p => p.user_id === session.user.id);
     }
+
+    // 2. Catégorie
     if (filter !== 'all') {
       result = result.filter(p => p.category === filter);
     }
+
+    // 3. Recherche
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -132,6 +140,7 @@ const App: React.FC = () => {
         p.user_name.toLowerCase().includes(q)
       );
     }
+
     return result;
   }, [posts, currentView, filter, searchQuery, session]);
 
@@ -141,29 +150,29 @@ const App: React.FC = () => {
       
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-4 group cursor-pointer" onClick={() => { setCurrentView('salon'); scrollToTop(); }}>
-            <div className="w-8 h-8 md:w-11 md:h-11 bg-stone-900 rounded-xl flex items-center justify-center text-white shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-300 shrink-0">
-              <span className="font-serif text-lg md:text-2xl font-bold">R</span>
+          <div className="flex items-center gap-3 md:gap-4 group cursor-pointer" onClick={() => { setCurrentView('salon'); scrollToTop(); }}>
+            <div className="w-9 h-9 md:w-11 md:h-11 bg-stone-900 rounded-xl flex items-center justify-center text-white shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-300">
+              <span className="font-serif text-xl md:text-2xl font-bold">R</span>
             </div>
             <div className="flex flex-col">
-              <h1 className="font-serif text-sm md:text-2xl font-extrabold text-stone-900 tracking-tight leading-none text-nowrap">Les Rhéteurs</h1>
-              <span className="hidden xs:block text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold text-amber-600 mt-0.5 md:mt-1">L'Agora Littéraire</span>
+              <h1 className="font-serif text-lg md:text-2xl font-extrabold text-stone-900 tracking-tight leading-none">Les Rhéteurs</h1>
+              <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold text-amber-600 mt-0.5 md:mt-1">L'Agora Littéraire</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-1.5 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {session ? (
               <>
                 <button 
                   onClick={() => setCurrentView(currentView === 'salon' ? 'dashboard' : 'salon')}
-                  className={`flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all ${currentView === 'dashboard' ? 'bg-amber-100 text-amber-900 shadow-inner' : 'text-stone-500 hover:text-stone-900 hover:bg-stone-50'}`}
+                  className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${currentView === 'dashboard' ? 'bg-amber-100 text-amber-900' : 'text-stone-500 hover:text-stone-900'}`}
                 >
-                  <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                  <span className="inline">{currentView === 'salon' ? 'Mon Espace' : 'Le Salon'}</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  {currentView === 'salon' ? 'Mon Espace' : 'Le Salon'}
                 </button>
                 <button 
                   onClick={() => setIsProfileOpen(true)}
-                  className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-stone-200 overflow-hidden hover:scale-105 transition-transform shadow-sm shrink-0"
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-stone-200 overflow-hidden hover:scale-105 transition-transform shadow-sm"
                 >
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -175,19 +184,19 @@ const App: React.FC = () => {
                 </button>
               </>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} className="text-[10px] md:text-sm font-bold text-stone-600 hover:text-stone-900 uppercase tracking-widest mr-1">
+              <button onClick={() => setIsAuthOpen(true)} className="text-[10px] md:text-sm font-bold text-stone-600 hover:text-stone-900 uppercase tracking-widest mr-2">
                 Connexion
               </button>
             )}
-            <Button variant="primary" className="text-[10px] md:text-base px-2.5 py-1.5 md:px-6 md:py-2.5 shrink-0" onClick={() => { setEditingPost(null); setIsFormOpen(true); }}>
+            <Button variant="primary" className="text-xs md:text-base px-3 py-1.5 md:px-6 md:py-2.5" onClick={() => { setEditingPost(null); setIsFormOpen(true); }}>
               Partager
             </Button>
           </div>
         </div>
       </nav>
 
-      <header className="relative pt-12 md:pt-20 pb-8 md:pb-12 text-center px-4">
-        <h2 className="font-serif text-3xl md:text-7xl text-stone-900 mb-6 leading-tight">
+      <header className="relative pt-12 md:pt-20 pb-12 text-center px-4">
+        <h2 className="font-serif text-4xl md:text-7xl text-stone-900 mb-6 leading-tight">
           {currentView === 'salon' ? (
             <>Le salon des <br/><span className="italic font-normal text-amber-700">belles lettres.</span></>
           ) : (
@@ -195,39 +204,23 @@ const App: React.FC = () => {
           )}
         </h2>
         
-        <div className="max-w-2xl mx-auto px-2 mt-8">
+        <div className="max-w-2xl mx-auto px-4 mt-8">
           <SearchBar 
             posts={posts} 
             onSearch={setSearchQuery} 
-            placeholder={currentView === 'salon' ? "Chercher au salon..." : "Chercher vos exposés..."}
+            placeholder={currentView === 'salon' ? "Chercher une œuvre au salon..." : "Chercher parmi vos exposés..."}
           />
         </div>
       </header>
 
       <section className="max-w-7xl mx-auto px-4 md:px-6">
-        {session && (
-          <div className="flex justify-center mb-10">
-            <button 
-              onClick={() => setCurrentView(currentView === 'salon' ? 'dashboard' : 'salon')}
-              className="group flex items-center gap-3 px-6 py-3 bg-white border border-stone-200 rounded-2xl shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300"
-            >
-              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-              </div>
-              <span className="font-bold text-[10px] md:text-xs text-stone-600 tracking-widest uppercase">
-                {currentView === 'salon' ? 'Accéder à mon espace personnel' : 'Retourner au salon public'}
-              </span>
-            </button>
-          </div>
-        )}
-
-        <div className="mb-12 overflow-x-auto pb-4 scrollbar-hide">
-          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-2 md:gap-3">
+        <div className="mb-12">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3">
             {['all', 'Fiction', 'Non-Fiction', 'Philosophie', 'Poésie', 'Histoire'].map(cat => (
               <button 
                 key={cat}
                 onClick={() => setFilter(cat)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-[10px] md:text-sm font-bold transition-all duration-300 border ${filter === cat ? 'bg-stone-900 border-stone-900 text-white shadow-lg' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-400'}`}
+                className={`px-4 py-2 rounded-full text-[10px] md:text-sm font-bold transition-all duration-300 border ${filter === cat ? 'bg-stone-900 border-stone-900 text-white shadow-lg' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-400'}`}
               >
                 {cat === 'all' ? 'Toutes catégories' : cat}
               </button>
@@ -278,13 +271,11 @@ const App: React.FC = () => {
         />
       )}
       {isFormOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm text-white font-serif italic text-xl">Préparation de l'écritoire...</div>}>
-          <PostForm 
-            onSave={handleSavePost} 
-            onCancel={() => { setIsFormOpen(false); setEditingPost(null); }} 
-            initialData={editingPost}
-          />
-        </Suspense>
+        <PostForm 
+          onSave={handleSavePost} 
+          onCancel={() => { setIsFormOpen(false); setEditingPost(null); }} 
+          initialData={editingPost}
+        />
       )}
       {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
       {isProfileOpen && session && <ProfileModal userId={session.user.id} onClose={() => setIsProfileOpen(false)} />}
@@ -293,7 +284,7 @@ const App: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-8">
              <div className="w-8 h-8 bg-amber-500 rounded rotate-12"></div>
-             <p className="font-serif text-xl md:text-2xl italic text-amber-200">"Savoir lire, c'est savoir vivre."</p>
+             <p className="font-serif text-2xl italic text-amber-200">"Savoir lire, c'est savoir vivre."</p>
           </div>
           <span className="text-stone-500 text-[10px] uppercase tracking-[0.4em] font-medium">Les Rhéteurs — MMXXV</span>
         </div>

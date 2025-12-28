@@ -1,31 +1,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Récupération des variables d'environnement
-// Vite et Vercel remplacent souvent import.meta.env.VITE_... statiquement lors du build.
-// On vérifie aussi process.env pour les environnements qui le supportent.
+const supabaseUrl = 'https://yzreaesuberjvnpemguf.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6cmVhZXN1YmVyanZucGVtZ3VmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MDQ3MTcsImV4cCI6MjA4MjQ4MDcxN30.DxyXMOzLFU2uXbU5IpiVFmIe2oqXR5D-TdQVuOqrDu0';
 
-const supabaseUrl = 
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || 
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 
-  '';
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const supabaseAnonKey = 
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) || 
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || 
-  '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    "ERREUR CRITIQUE : Identifiants Supabase manquants.\n" +
-    "Veuillez configurer les variables d'environnement VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.\n" +
-    "Sur Vercel : ajoutez-les dans Settings > Environment Variables."
-  );
-}
-
-// On initialise le client même si les variables manquent pour éviter un crash au chargement,
-// mais les requêtes échoueront avec un message explicite.
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+// Note: This app assumes a table "posts" exists with the following columns:
+// id (uuid), created_at (timestamptz), title (text), book_title (text), 
+// book_author (text), content (text), user_name (text), category (text), ai_analysis (text)

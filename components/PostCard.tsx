@@ -14,9 +14,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
     year: 'numeric'
   });
 
-  // Nettoyer le HTML pour l'aperçu textuel uniquement
-  const plainTextContent = post.content.replace(/<[^>]*>?/gm, ' ');
-
   return (
     <div 
       onClick={() => onClick(post)}
@@ -51,7 +48,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick }) => {
         </div>
 
         <p className="text-stone-600 line-clamp-3 flex-grow text-sm md:text-base leading-relaxed mb-6 font-light">
-          {plainTextContent}
+          {post.content}
         </p>
 
         <div className="mt-auto flex items-center justify-between pt-5 border-t border-stone-50">
