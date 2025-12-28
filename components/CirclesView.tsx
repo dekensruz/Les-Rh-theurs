@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '../supabase';
-import { Circle, CircleReading, Profile, CirclePoll, CircleQuote, CircleEvent, CircleThread, CircleThreadMessage, CircleReadingRole, CircleJournalEntry, CircleHistoryEntry, PostCategory } from '../types';
-import { Button } from './Button';
+import { supabase } from '../supabase.ts';
+import { Circle, CircleReading, Profile, CirclePoll, CircleQuote, CircleEvent, CircleThread, CircleThreadMessage, CircleReadingRole, CircleJournalEntry, CircleHistoryEntry, PostCategory } from '../types.ts';
+import { Button } from './Button.tsx';
 
 interface CirclesViewProps {
   currentUserId?: string;
@@ -702,7 +702,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
         </div>
       )}
 
-      {/* MODALS D'ÉDITION (Inchangés mais conservés pour intégrité) */}
+      {/* MODALS D'ÉDITION */}
       {showJournalForm && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center p-0 md:p-4 bg-stone-950/80 backdrop-blur-md">
           <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] md:rounded-[2rem] shadow-2xl paper-texture flex flex-col relative">
@@ -730,57 +730,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({ currentUserId, onAuthR
               <Button type="button" variant="ghost" className="flex-1" onClick={() => setShowHistoryForm(false)}>Fermer</Button>
               <Button type="submit" className="flex-1 shadow-lg" onClick={handleHistorySubmit}>Partager</Button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {showPollForm && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 className="font-serif text-2xl mb-8">Lancer un vote</h3>
-            <form onSubmit={handleCreatePoll} className="space-y-4">
-              {pollOptions.map((opt, idx) => (
-                <div key={idx} className="space-y-2 p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                  <input required placeholder="Titre du livre" value={opt.title} onChange={e => {const n=[...pollOptions];n[idx].title=e.target.value;setPollOptions(n);}} className="w-full p-2 bg-transparent text-sm font-serif outline-none border-b border-stone-200" />
-                  <input required placeholder="Auteur" value={opt.author} onChange={e => {const n=[...pollOptions];n[idx].author=e.target.value;setPollOptions(n);}} className="w-full p-2 bg-transparent text-[9px] uppercase font-black tracking-widest outline-none text-amber-700" />
-                </div>
-              ))}
-              <div className="flex gap-4 pt-4"><Button type="button" variant="ghost" className="flex-1" onClick={() => setShowPollForm(false)}>Fermer</Button><Button type="submit" className="flex-1">Valider</Button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showReadingForm && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 className="font-serif text-2xl mb-8">Livre choisi</h3>
-            <form onSubmit={handleCreateReading} className="space-y-6">
-              <input required value={readingFormData.title} onChange={e => setReadingFormData({...readingFormData, title: e.target.value})} placeholder="Titre du livre" className="w-full p-4 bg-stone-50 rounded-2xl outline-none border border-stone-100" />
-              <input required value={readingFormData.author} onChange={e => setReadingFormData({...readingFormData, author: e.target.value})} placeholder="Auteur" className="w-full p-4 bg-stone-50 rounded-2xl outline-none border border-stone-100" />
-              <div className="space-y-2"><label className="text-[10px] font-black uppercase text-stone-400 block ml-1">À finir pour le...</label><input required type="date" value={readingFormData.endDate} onChange={e => setReadingFormData({...readingFormData, endDate: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none border border-stone-100" /></div>
-              <div className="flex gap-4 pt-4"><Button type="button" variant="ghost" className="flex-1" onClick={() => setShowReadingForm(false)}>Fermer</Button><Button type="submit" className="flex-1">Valider</Button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showRoleForm && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-            <h3 className="font-serif text-2xl mb-8">Donner un rôle</h3>
-            <form onSubmit={handleAssignRole} className="space-y-6">
-              <select required value={roleData.userId} onChange={e => setRoleData({...roleData, userId: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none border border-stone-100 appearance-none">
-                <option value="">Choisir un membre</option>
-                {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
-              </select>
-              <select required value={roleData.roleName} onChange={e => setRoleData({...roleData, roleName: e.target.value})} className="w-full p-4 bg-stone-50 rounded-2xl outline-none border border-stone-100 appearance-none">
-                <option value="Modérateur">Modérateur</option>
-                <option value="Scribe">Scribe</option>
-                <option value="Historien">Historien</option>
-              </select>
-              <div className="flex gap-4 pt-4"><Button type="button" variant="ghost" className="flex-1" onClick={() => setShowRoleForm(false)}>Fermer</Button><Button type="submit" className="flex-1">Confirmer</Button></div>
-            </form>
           </div>
         </div>
       )}

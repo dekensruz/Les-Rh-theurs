@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../supabase';
-import { Reply } from '../types';
-import { Button } from './Button';
-import { PublicProfileModal } from './PublicProfileModal';
+import { supabase } from '../supabase.ts';
+import { Reply } from '../types.ts';
+import { Button } from './Button.tsx';
+import { PublicProfileModal } from './PublicProfileModal.tsx';
 
 interface ReplySectionProps {
   postId: string;

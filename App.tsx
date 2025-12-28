@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from './supabase';
-import { Post, Profile, PostCategory } from './types';
-import { PostCard } from './components/PostCard';
-import { PostModal } from './components/PostModal';
-import { PostForm } from './components/PostForm';
-import { Button } from './components/Button';
-import { AuthModal } from './components/AuthModal';
-import { ProfileModal } from './components/ProfileModal';
-import { PublicProfileModal } from './components/PublicProfileModal';
-import { SearchBar } from './components/SearchBar';
-import { Dashboard } from './components/Dashboard';
-import { CirclesView } from './components/CirclesView';
+import { supabase } from './supabase.ts';
+import { Post, Profile, PostCategory } from './types.ts';
+import { PostCard } from './components/PostCard.tsx';
+import { PostModal } from './components/PostModal.tsx';
+import { PostForm } from './components/PostForm.tsx';
+import { Button } from './components/Button.tsx';
+import { AuthModal } from './components/AuthModal.tsx';
+import { ProfileModal } from './components/ProfileModal.tsx';
+import { PublicProfileModal } from './components/PublicProfileModal.tsx';
+import { SearchBar } from './components/SearchBar.tsx';
+import { Dashboard } from './components/Dashboard.tsx';
+import { CirclesView } from './components/CirclesView.tsx';
 
 type AppView = 'salon' | 'dashboard' | 'circles';
 
@@ -62,7 +62,6 @@ const App: React.FC = () => {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
-  // Handle post ID in URL for sharing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const postId = params.get('post');

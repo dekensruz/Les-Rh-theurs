@@ -1,8 +1,8 @@
 
 import React, { useRef, useState } from 'react';
-import { Post } from '../types';
-import { Button } from './Button';
-import { ReplySection } from './ReplySection';
+import { Post } from '../types.ts';
+import { Button } from './Button.tsx';
+import { ReplySection } from './ReplySection.tsx';
 
 interface PostModalProps {
   post: Post | null;
@@ -101,7 +101,7 @@ export const PostModal: React.FC<PostModalProps> = ({
             <p className="text-stone-500 text-sm md:text-lg italic">Sur <span className="text-stone-800 font-semibold not-italic">"{post.book_title}"</span> de {post.book_author}</p>
           </header>
 
-          <article ref={contentRef} onMouseUp={handleMouseUp} className="prose prose-stone prose-lg max-w-none mb-12 selection:bg-amber-100">
+          <article onMouseUp={handleMouseUp} className="prose prose-stone prose-lg max-w-none mb-12 selection:bg-amber-100">
             <p className="text-stone-800 leading-[1.7] whitespace-pre-wrap font-light">{post.content}</p>
           </article>
 
