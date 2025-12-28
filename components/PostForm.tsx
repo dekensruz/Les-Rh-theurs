@@ -5,7 +5,7 @@ import { Button } from './Button';
 import { supabase } from '../supabase';
 
 // Chargement paresseux de Quill pour éviter les erreurs de montage asynchrones dans React 19
-const ReactQuill = React.lazy(() => import('react-quill'));
+const ReactQuill = React.lazy(() => import('react-quill-new'));
 
 interface PostFormProps {
   onSave: (data: any) => Promise<void>;
