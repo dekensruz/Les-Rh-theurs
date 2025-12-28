@@ -1,7 +1,17 @@
 
--- SQL Script for Les Rhéteurs (Updated: Full Management & Search Support)
+-- SQL Script for Les Rhéteurs (Full Schema)
 
--- 1. Table des publications
+-- 1. Table des Profiles (doit exister en premier pour les références)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  username TEXT UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  bio TEXT
+);
+
+-- 2. Table des publications
 CREATE TABLE IF NOT EXISTS public.posts (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -12,43 +22,78 @@ CREATE TABLE IF NOT EXISTS public.posts (
     user_name TEXT NOT NULL,
     category TEXT NOT NULL,
     cover_url TEXT,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
--- RLS pour les posts
+-- 3. Table des Répliques
+CREATE TABLE IF NOT EXISTS public.replies (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    quoted_text TEXT,
+    parent_reply_id UUID REFERENCES public.replies(id) ON DELETE SET NULL
+);
+
+-- 4. Table des Cercles de Lecture
+CREATE TABLE IF NOT EXISTS public.circles (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    name TEXT NOT NULL,
+    description TEXT,
+    theme TEXT NOT NULL,
+    is_private BOOLEAN DEFAULT false,
+    cover_url TEXT,
+    creator_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- 5. Table des Membres des Cercles
+CREATE TABLE IF NOT EXISTS public.circle_members (
+    circle_id UUID REFERENCES public.circles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    role TEXT DEFAULT 'member',
+    PRIMARY KEY (circle_id, user_id)
+);
+
+-- 6. Table des Lectures Communes
+CREATE TABLE IF NOT EXISTS public.circle_readings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    circle_id UUID REFERENCES public.circles(id) ON DELETE CASCADE NOT NULL,
+    book_title TEXT NOT NULL,
+    book_author TEXT,
+    start_date DATE DEFAULT CURRENT_DATE,
+    end_date DATE,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Policies (RLS)
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.circles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.circle_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.circle_readings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Lecture publique : Tout le monde peut voir les exposés
-DROP POLICY IF EXISTS "Allow public read access" ON public.posts;
-CREATE POLICY "Allow public read access" ON public.posts FOR SELECT USING (true);
-
--- Insertion : Uniquement pour les utilisateurs connectés (le user_id doit correspondre à leur session)
-DROP POLICY IF EXISTS "Allow authenticated insert" ON public.posts;
-CREATE POLICY "Allow authenticated insert" ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Modification : Uniquement le propriétaire
-DROP POLICY IF EXISTS "Users can update own posts" ON public.posts;
+-- Post Policies
+CREATE POLICY "Allow public read posts" ON public.posts FOR SELECT USING (true);
+CREATE POLICY "Users can insert own posts" ON public.posts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own posts" ON public.posts FOR UPDATE USING (auth.uid() = user_id);
-
--- Suppression : Uniquement le propriétaire
-DROP POLICY IF EXISTS "Users can delete own posts" ON public.posts;
 CREATE POLICY "Users can delete own posts" ON public.posts FOR DELETE USING (auth.uid() = user_id);
 
--- 2. Table des profils
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  username TEXT UNIQUE,
-  full_name TEXT,
-  avatar_url TEXT,
-  bio TEXT
-);
+-- Reply Policies
+CREATE POLICY "Public read replies" ON public.replies FOR SELECT USING (true);
+CREATE POLICY "Auth insert replies" ON public.replies FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners update replies" ON public.replies FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Owners delete replies" ON public.replies FOR DELETE USING (auth.uid() = user_id);
 
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Profiles are public" ON public.profiles;
-CREATE POLICY "Profiles are public" ON public.profiles FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+-- Profile Policies
+CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- 3. Storage
--- N'oubliez pas de créer les buckets 'covers' et 'avatars' dans l'interface Supabase avec accès public.
+-- Circle Policies
+CREATE POLICY "Public read circles" ON public.circles FOR SELECT USING (true);
+CREATE POLICY "Auth insert circles" ON public.circles FOR INSERT WITH CHECK (auth.uid() = creator_id);
+CREATE POLICY "Creators manage readings" ON public.circle_readings FOR ALL USING (EXISTS (SELECT 1 FROM public.circles WHERE id = circle_id AND creator_id = auth.uid()));
+CREATE POLICY "Public read readings" ON public.circle_readings FOR SELECT USING (true);
